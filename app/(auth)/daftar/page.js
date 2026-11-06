@@ -4,7 +4,8 @@ import RegisterForm from "@/components/RegisterForm";
 export const metadata = { title: "Daftar Akun" };
 
 const POIN = [
-  
+  { judul: "Akun Civitas Akademika", teks: "Khusus mahasiswa, dosen, dan staf FMIPA UNNES yang terdaftar." },
+  { judul: "Verifikasi Terpadu", teks: "Peminjaman tertib langsung tersinkronisasi dengan jadwal fakultas." },
 ];
 
 export default function DaftarPage() {

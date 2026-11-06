@@ -18,7 +18,7 @@ npm run lint
 npm run build && npm start
 ```
 
-## Halaman tahap 1 (selesai)
+## Halaman tahap 1 dan 2 (selesai)
 | Rute | Isi |
 |---|---|
 | `/` | Beranda: hero beranimasi + Cek Ketersediaan, aset unggulan, kategori, cara menyewa, FAQ |
@@ -26,7 +26,13 @@ npm run build && npm start
 | `/aset/[slug]` | Detail aset: galeri, tab, estimasi biaya, validasi H-2/jam operasional, kalender ketersediaan |
 | `/masuk` | Masuk (validasi, galat, tampil/sembunyi sandi) |
 | `/daftar` | Daftar akun penyewa (mahasiswa/dosen/staf, validasi domain email UNNES) |
-| `/dashboard/*` | Placeholder — dikerjakan pada tahap berikutnya |
+| `/dashboard/penyewa` | Dashboard Penyewa: statistik, "Perlu Tindakan", transaksi terbaru, jadwal terdekat, keadaan kosong |
+| `/dashboard/penyewa/ajukan` | Form pengajuan sewa 3 langkah (aset & jadwal, tujuan, dokumen), ringkasan biaya, validasi |
+| `/dashboard/penyewa/transaksi` | Transaksi Saya (cari + filter status); `/transaksi/[kode]` detail: alur proses, pembayaran + unggah bukti, rincian biaya, dokumen, pembatalan + refund |
+| `/dashboard/penyewa/pembayaran` | Daftar tagihan (perlu dibayar, menunggu verifikasi, lunas) |
+| `/dashboard/penyewa/riwayat` | Riwayat penyewaan (selesai, ditolak, dibatalkan) |
+| `/dashboard/penyewa/profil` | Profil, keluar, setel ulang data demo |
+| `/dashboard/petugas`, `/dashboard/admin` | Placeholder — tahap 3 |
 
 ## Akun demo (simulasi, disimpan di localStorage)
 | Peran | Email | Kata sandi |
@@ -45,6 +51,12 @@ lib/waktu.js  aturan jadwal: Senin–Sabtu, sesi 07.00–11.30 & 12.30–18.00, 
 lib/auth.js   autentikasi simulasi (akan diganti Supabase Auth)
 public/logo/  logo berlatar transparan (icon, wordmark, full)
 ```
+
+## Alur demo penyewa
+Masuk sebagai penyewa → ajukan sewa → buka detail transaksi. Karena halaman admin/petugas belum ada,
+gunakan **Panel simulasi** di bagian bawah detail transaksi untuk menyetujui, memverifikasi bayar,
+serah terima, dan pengembalian. Data transaksi disimpan di localStorage (`lib/transaksi.js`);
+gunakan "Setel Ulang Data Demo" di halaman Profil untuk mengembalikan data contoh.
 
 ## Catatan
 - Foto aset: lihat `public/images/aset/README.txt`. Tanpa foto, tampil placeholder.
