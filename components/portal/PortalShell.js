@@ -23,7 +23,7 @@ function Sidebar({ cfg, sesi, pathname, badge, onNavigate, onKeluar }) {
         <Brand size={42} tagline={false} />
         <p className="mt-2 text-[11px] leading-tight text-white/60">{peran === "admin" ? "FMIPA UNNES Terintegrasi" : "Sistem Informasi Penyewaan Aset Terintegrasi"}</p>
       </div>
-      <nav className="flex-1 overflow-y-auto px-3 py-5" aria-label={`Menu ${peran}`}>
+      <nav className="no-scrollbar flex-1 overflow-y-auto px-3 py-5" aria-label={`Menu ${peran}`}>
         {cfg.kepala && <p className="mb-3 px-3 text-[11px] font-bold tracking-widest text-white/50">{cfg.kepala}</p>}
         {cfg.grup.map((g, gi) => (
           <div key={gi} className={gi > 0 ? "mt-5" : ""}>

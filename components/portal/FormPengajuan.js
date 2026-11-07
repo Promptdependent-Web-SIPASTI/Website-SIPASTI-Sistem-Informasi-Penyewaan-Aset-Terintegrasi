@@ -240,11 +240,11 @@ export default function FormPengajuan({ awal }) {
             <p className="mb-5 text-xs text-sky">Format berkas: PDF, JPG, atau PNG, maksimal 5 MB per berkas.</p>
             <div className="space-y-5">
               <div>
-                <p className={lab}>Surat Permohonan / Perizinan <span className="font-normal text-slate-500">(ditandatangani dekan atau dosen pembina)</span></p>
+                <p className={lab}>Surat Permohonan / Perizinan<span className="text-red-500">*</span> <span className="font-normal text-slate-500">(ditandatangani dekan atau dosen pembina)</span></p>
                 <UploadBox id="up-surat" ikon={FileText} judul="Klik untuk unggah atau seret berkas ke sini" keterangan="Surat permohonan atau izin yang telah ditandatangani" nilai={dok.surat} onChange={(v) => { setDok((d) => ({ ...d, surat: v })); bersihkan("surat"); }} galat={galat.surat} />
               </div>
               <div>
-                <p className={lab}>Identitas Pemohon / KTM</p>
+                <p className={lab}>Identitas Pemohon / KTM<span className="text-red-500">*</span></p>
                 <UploadBox id="up-identitas" ikon={IdCard} judul="Klik untuk unggah atau seret berkas ke sini" keterangan="KTM pemohon atau kartu identitas instansi resmi" nilai={dok.identitas} onChange={(v) => { setDok((d) => ({ ...d, identitas: v })); bersihkan("identitas"); }} galat={galat.identitas} />
               </div>
               <div>

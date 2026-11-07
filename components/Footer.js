@@ -42,7 +42,6 @@ export default function Footer() {
         </div>
         <div className="flex flex-col gap-2 pt-8 text-xs text-slate-400 sm:flex-row sm:justify-between">
           <p>© 2026 FMIPA Universitas Negeri Semarang.</p>
-          <p>Proyek Akhir Web (UAS)</p>
         </div>
       </div>
     </footer>

@@ -62,9 +62,15 @@ export default function DashboardAdmin() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
         {stat.map(({ n, label, ikon: Icon, teks }, i) => (
-          <motion.div key={label} initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
+          <motion.div
+            key={label}
+            className={i < 3 ? "lg:col-span-2" : "lg:col-span-3"}
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.06 }}
+          >
             <Kartu className="h-full p-5">
               <span className="flex size-11 items-center justify-center rounded-xl bg-navy text-sun"><Icon size={20} /></span>
               <p className={`mt-4 font-extrabold text-navy ${teks ? "text-xl" : "text-3xl"}`}>{n}</p>
@@ -86,7 +92,7 @@ export default function DashboardAdmin() {
               </li>
             ))}
           </ul>
-          <div className="mt-6 flex items-center justify-between border-t border-pale pt-4 text-xs"><span className="flex items-center gap-2 text-slate-500"><span className="size-2 rounded-full bg-sky" /> Aktivitas operasional berjalan</span><b className="text-navy">Rasio Persetujuan: {rasio}%</b></div>
+          <div className="mt-6 flex items-center justify-between border-t border-pale pt-4 text-xs"><span className="flex items-center gap-2 text-slate-500"><span className="size-2 rounded-full bg-sky" /> Aktivitas operasional berjalan</span></div>
         </Kartu>
 
         <Kartu className="flex flex-col p-6">
