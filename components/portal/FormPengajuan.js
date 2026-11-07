@@ -10,7 +10,7 @@ import AsetImage from "@/components/AsetImage";
 import { ASET, getAset, rupiah, satuanLabel } from "@/lib/data";
 import { SEMUA_JAM, durasiJam, fromISO, sesiMulai, sesiSelesai, statusHari, tambahHari, toISO, minTanggalSewa } from "@/lib/waktu";
 import { useHariIni, useSesi } from "@/lib/useClient";
-import { cariTanggalAwal, fmtTgl, tambahTransaksi } from "@/lib/transaksi";
+import { cariTanggalAwal, fmtTgl, tambahTransaksi, TIPE_LABEL } from "@/lib/transaksi";
 
 const BASE = "/dashboard/penyewa";
 const JAM_MULAI = SEMUA_JAM.slice(0, -1).filter((t) => t !== "11:30");
@@ -104,7 +104,7 @@ export default function FormPengajuan({ awal }) {
     setProses(true);
     setTimeout(() => {
       const kode = tambahTransaksi({
-        email: sesi.email, asetSlug: aset.slug, asetNama: aset.nama, kodeAset: aset.kode, kategori: aset.kategori, satuan: aset.satuan, tarif: aset.tarif,
+        email: sesi.email, penyewa: { nama: sesi.nama, tipe: sesi.tipe, idn: sesi.idn, unit: TIPE_LABEL[sesi.tipe] ?? "Penyewa" }, asetSlug: aset.slug, asetNama: aset.nama, kodeAset: aset.kode, kategori: aset.kategori, satuan: aset.satuan, tarif: aset.tarif,
         jumlah: isRuangan ? 1 : jumlah, durasi, tanggalMulai: t1, tanggalSelesai: t2,
         ...(aset.satuan === "jam" ? { jamMulai: jm, jamSelesai: js } : {}),
         tujuan: tujuan.trim(), total,

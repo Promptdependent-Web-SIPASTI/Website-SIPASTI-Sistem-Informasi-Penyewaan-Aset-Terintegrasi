@@ -18,7 +18,7 @@ npm run lint
 npm run build && npm start
 ```
 
-## Halaman tahap 1 dan 2 (selesai)
+## Halaman tahap 1, 2, dan 3 (selesai)
 | Rute | Isi |
 |---|---|
 | `/` | Beranda: hero beranimasi + Cek Ketersediaan, aset unggulan, kategori, cara menyewa, FAQ |
@@ -32,7 +32,8 @@ npm run build && npm start
 | `/dashboard/penyewa/pembayaran` | Daftar tagihan (perlu dibayar, menunggu verifikasi, lunas) |
 | `/dashboard/penyewa/riwayat` | Riwayat penyewaan (selesai, ditolak, dibatalkan) |
 | `/dashboard/penyewa/profil` | Profil, keluar, setel ulang data demo |
-| `/dashboard/petugas`, `/dashboard/admin` | Placeholder — tahap 3 |
+| `/dashboard/petugas` | Dashboard, Jadwal Penyewaan, Serah Terima, Pengembalian (hitung denda otomatis), Kondisi dan Kerusakan Aset |
+| `/dashboard/admin` | Dashboard, Persetujuan (pemeriksaan kelayakan otomatis), Verifikasi Pembayaran, Pembatalan dan Refund, Konfirmasi Denda, Rekap Transaksi (ekspor CSV), Manajemen Aset, Kategori, Tarif, Pengguna, Pengaturan Sistem |
 
 ## Akun demo (simulasi, disimpan di localStorage)
 | Peran | Email | Kata sandi |
@@ -40,6 +41,8 @@ npm run build && npm start
 | Penyewa | mahasiswa@students.unnes.ac.id | Sipasti123 |
 | Petugas | petugas@mail.unnes.ac.id | Sipasti123 |
 | Admin | admin@mail.unnes.ac.id | Sipasti123 |
+
+Nama demo: penyewa Rizky Pratama, petugas Slamet Riyadi, admin Admin FMIPA.
 
 ## Struktur
 ```
@@ -52,11 +55,15 @@ lib/auth.js   autentikasi simulasi (akan diganti Supabase Auth)
 public/logo/  logo berlatar transparan (icon, wordmark, full)
 ```
 
-## Alur demo penyewa
-Masuk sebagai penyewa → ajukan sewa → buka detail transaksi. Karena halaman admin/petugas belum ada,
-gunakan **Panel simulasi** di bagian bawah detail transaksi untuk menyetujui, memverifikasi bayar,
-serah terima, dan pengembalian. Data transaksi disimpan di localStorage (`lib/transaksi.js`);
-gunakan "Setel Ulang Data Demo" di halaman Profil untuk mengembalikan data contoh.
+## Alur demo lengkap
+1. **Penyewa** mengajukan sewa (dokumen wajib diunggah).
+2. **Admin** → Persetujuan Pengajuan → Setujui.
+3. **Penyewa** → detail transaksi → unggah bukti bayar.
+4. **Admin** → Verifikasi Pembayaran → Tandai Lunas.
+5. **Petugas** → Serah Terima → catat; lalu Pengembalian (denda keterlambatan dihitung otomatis; kerusakan diusulkan).
+6. **Admin** → Konfirmasi Denda → konfirmasi dan tandai lunas; transaksi selesai.
+
+Semua peran memakai data yang sama (localStorage, `lib/transaksi.js`). Setel ulang data lewat halaman Profil penyewa.
 
 ## Catatan
 - Foto aset: lihat `public/images/aset/README.txt`. Tanpa foto, tampil placeholder.

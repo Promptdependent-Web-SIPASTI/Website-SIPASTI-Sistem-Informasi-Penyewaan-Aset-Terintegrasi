@@ -28,6 +28,11 @@ export default function LoginForm({ next, baruDaftar }) {
     setProses(true);
     setTimeout(() => {
       const sesi = masuk(email, sandi);
+      if (sesi?.nonaktif) {
+        setProses(false);
+        setGalat("Akun Anda dinonaktifkan. Hubungi admin FMIPA UNNES untuk mengaktifkannya kembali.");
+        return;
+      }
       if (!sesi) {
         setProses(false);
         setGalat("Email atau kata sandi tidak sesuai. Periksa kembali informasi masuk Anda.");

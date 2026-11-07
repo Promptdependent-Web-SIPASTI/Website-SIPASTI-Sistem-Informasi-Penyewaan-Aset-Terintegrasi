@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft, Check, Circle, Dot, FlaskConical, Boxes, Wallet, Timer, Copy, Send, ShieldAlert, XCircle, FolderOpen, Eye, FileText, IdCard,
-  Info, Calculator, CircleCheck, CircleAlert, FileX2, X, History, KeyRound, PackageCheck, BadgeCheck, Clock3,
+  Info, Calculator, CircleCheck, CircleAlert, FileX2, X, History, KeyRound, PackageCheck, BadgeCheck, Clock3, Gavel,
 } from "lucide-react";
 import { Kartu, StatusTrx, StatusBayar, Remah, useSisaWaktu } from "./ui";
 import UploadBox from "./UploadBox";
@@ -13,12 +13,11 @@ import AsetImage from "@/components/AsetImage";
 import { getAset, rupiah } from "@/lib/data";
 import { HARI_PANJANG, fromISO } from "@/lib/waktu";
 import { useSesi } from "@/lib/useClient";
-import { useTransaksi, ubahTransaksi, hitungRefund, rumusBiaya, satuanTeks, fmtJam, fmtTgl, fmtWaktu, LANGKAH_ALUR, STATUS_TRX } from "@/lib/transaksi";
+import { useTransaksi, ubahTransaksi, hitungRefund, totalDenda, rumusBiaya, satuanTeks, fmtJam, fmtTgl, fmtWaktu, LANGKAH_ALUR, STATUS_TRX } from "@/lib/transaksi";
 
 const BASE = "/dashboard/penyewa";
 const REKENING = { nomor: "1370 0192 8472 001", bank: "Bank Mandiri a.n. FMIPA UNNES" };
 const IKON_LANGKAH = { diajukan: Send, disetujui: BadgeCheck, sedang_disewa: KeyRound, dikembalikan: PackageCheck, selesai: CircleCheck };
-const H = 3600 * 1000;
 
 function Stepper({ t }) {
   const gagal = ["ditolak", "dibatalkan"].includes(t.status);
@@ -175,32 +174,20 @@ function ModalBatal({ t, tutup }) {
   );
 }
 
-function PanelSimulasi({ t }) {
-  const aksi = [];
-  const now = () => Date.now();
-  if (t.status === "diajukan") {
-    aksi.push(["Setujui pengajuan (admin)", () => ubahTransaksi(t.kode, { pembayaran: "belum_dibayar", batasBayar: Math.max(now() + 2 * H, Math.min(now() + 24 * H, fromISO(t.tanggalMulai).getTime() - 15 * H)), catatanAdmin: "Disetujui. Mohon menjaga kebersihan dan mengembalikan aset tepat waktu." }, "disetujui")]);
-    aksi.push(["Tolak pengajuan (admin)", () => ubahTransaksi(t.kode, { catatanAdmin: "Jadwal bentrok dengan kegiatan fakultas pada waktu yang sama." }, "ditolak")]);
-  }
-  if (t.status === "disetujui") {
-    if (t.pembayaran === "menunggu_verifikasi") {
-      aksi.push(["Verifikasi: Lunas (admin)", () => ubahTransaksi(t.kode, { pembayaran: "lunas" })]);
-      aksi.push(["Tolak bukti bayar (admin)", () => ubahTransaksi(t.kode, { pembayaran: "bukti_ditolak", alasanBukti: "Nominal pada bukti tidak sesuai dengan tagihan." })]);
-    }
-    if (t.pembayaran === "lunas") aksi.push(["Catat serah terima (petugas)", () => ubahTransaksi(t.kode, {}, "sedang_disewa")]);
-    if (["belum_dibayar", "bukti_ditolak"].includes(t.pembayaran)) aksi.push(["Percepat batas bayar (uji batal otomatis)", () => ubahTransaksi(t.kode, { batasBayar: now() - 1000 })]);
-  }
-  if (t.status === "sedang_disewa") aksi.push(["Catat pengembalian (petugas)", () => ubahTransaksi(t.kode, {}, "dikembalikan")]);
-  if (t.status === "dikembalikan") aksi.push(["Selesaikan transaksi (admin)", () => ubahTransaksi(t.kode, {}, "selesai")]);
-  if (!aksi.length) return null;
+function KartuDenda({ t }) {
+  const d = t.denda;
+  if (!d) return null;
+  const total = totalDenda(t);
   return (
-    <div className="rounded-2xl border-2 border-dashed border-sky/40 bg-white/60 p-5">
-      <p className="flex items-center gap-2 text-sm font-bold text-navy"><Info size={16} className="text-sky" /> Panel simulasi (khusus demo front end)</p>
-      <p className="mt-1 text-xs text-slate-600">Halaman admin dan petugas belum tersedia. Gunakan tombol ini untuk memajukan status transaksi agar seluruh alur penyewa dapat dicoba. Panel ini dihapus saat backend terhubung.</p>
-      <div className="mt-3 flex flex-wrap gap-2">
-        {aksi.map(([label, fn]) => <button key={label} type="button" onClick={fn} className="rounded-lg bg-pale px-3.5 py-2 text-xs font-bold text-navy transition hover:bg-sky hover:text-white">{label}</button>)}
-      </div>
-    </div>
+    <Kartu className="p-6">
+      <div className="flex items-center justify-between"><h2 className="flex items-center gap-2 text-lg font-bold text-navy"><Gavel size={18} className="text-sky" /> Denda</h2><span className={`rounded-full px-3 py-1 text-xs font-bold ${d.statusBayar === "lunas" ? "bg-emerald-50 text-emerald-700" : "bg-orange-50 text-orange-600"}`}>{d.statusBayar === "lunas" ? "Lunas" : "Belum Dibayar"}</span></div>
+      <dl className="mt-4 space-y-3 text-sm">
+        {d.keterlambatan > 0 && <div><dt className="flex justify-between"><span className="text-slate-500">Keterlambatan</span><b className="text-navy">{rupiah(d.keterlambatan)}</b></dt><dd className="mt-0.5 text-xs text-slate-500">{d.ketTelat}</dd></div>}
+        {d.kerusakan > 0 && <div><dt className="flex justify-between"><span className="text-slate-500">Kerusakan / kehilangan</span><b className="text-navy">{d.konfirmasi === "menunggu" ? "Menunggu konfirmasi" : rupiah(d.kerusakan)}</b></dt>{d.kerusakanKet && <dd className="mt-0.5 text-xs text-slate-500">{d.kerusakanKet}</dd>}</div>}
+        <div className="flex items-center justify-between border-t border-pale pt-3"><dt className="font-bold text-navy">Total Denda</dt><dd className="text-xl font-extrabold text-navy">{rupiah(total)}</dd></div>
+      </dl>
+      {d.statusBayar !== "lunas" && <p className="mt-3 flex gap-2 rounded-xl bg-soft p-3 text-xs leading-relaxed text-slate-600"><Info size={14} className="mt-0.5 shrink-0 text-sky" /> Pelunasan denda dicatat oleh admin FMIPA. Hubungi admin setelah melakukan pembayaran.</p>}
+    </Kartu>
   );
 }
 
@@ -298,6 +285,7 @@ export default function DetailTransaksi({ kode, baru }) {
 
         <div className="space-y-6">
           <PanelBayar key={`${t.pembayaran}-${t.status}`} t={t} />
+          <KartuDenda t={t} />
           {boleh && (
             <Kartu className="p-6">
               <h2 className="flex items-center gap-2 text-lg font-bold text-navy"><ShieldAlert size={18} className="text-sky" /> Ketentuan Pembatalan</h2>
@@ -307,8 +295,6 @@ export default function DetailTransaksi({ kode, baru }) {
           )}
         </div>
       </div>
-
-      <PanelSimulasi t={t} />
 
       <AnimatePresence>{batal && <ModalBatal t={t} tutup={() => setBatal(false)} />}</AnimatePresence>
       <AnimatePresence>
