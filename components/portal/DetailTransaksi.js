@@ -5,10 +5,11 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft, Check, Circle, Dot, FlaskConical, Boxes, Wallet, Timer, Copy, Send, ShieldAlert, XCircle, FolderOpen, Eye, FileText, IdCard,
-  Info, Calculator, CircleCheck, CircleAlert, FileX2, X, History, KeyRound, PackageCheck, BadgeCheck, Clock3, Gavel,
+  Info, Calculator, CircleCheck, CircleAlert, FileX2, X, History, KeyRound, PackageCheck, BadgeCheck, Clock3, Gavel, FileSignature,
 } from "lucide-react";
 import { Kartu, StatusTrx, StatusBayar, Remah, useSisaWaktu } from "./ui";
 import UploadBox from "./UploadBox";
+import TombolKontrak from "./TombolKontrak";
 import AsetImage from "@/components/AsetImage";
 import { getAset, rupiah } from "@/lib/data";
 import { HARI_PANJANG, fromISO } from "@/lib/waktu";
@@ -191,6 +192,23 @@ function KartuDenda({ t }) {
   );
 }
 
+function KartuKontrak({ t }) {
+  if (t.pembayaran !== "lunas" || ["dibatalkan", "ditolak"].includes(t.status)) return null;
+  const k = t.kontrak;
+  return (
+    <Kartu className="border-l-4 border-l-sun p-6">
+      <h2 className="flex items-center gap-2 text-lg font-bold text-navy"><FileSignature size={18} className="text-sky" /> Kontrak Sewa</h2>
+      <p className="mt-3 text-sm leading-relaxed text-ink">Pembayaran Anda telah diverifikasi admin. Dokumen perjanjian sewa disusun otomatis oleh sistem. Unduh, cetak, lalu tandatangani bersama pihak fakultas.</p>
+      <dl className="mt-4 space-y-2 rounded-xl bg-soft p-4 text-sm">
+        <div className="flex justify-between gap-4"><dt className="text-slate-500">Nomor Kontrak</dt><dd className="text-right font-bold text-navy">{k?.nomor ?? "Diterbitkan saat diunduh"}</dd></div>
+        {k && <div className="flex justify-between gap-4"><dt className="text-slate-500">Tanggal Terbit</dt><dd className="text-right font-bold text-navy">{fmtWaktu(k.tanggal)} WIB</dd></div>}
+        <div className="flex justify-between gap-4"><dt className="text-slate-500">Format</dt><dd className="text-right font-bold text-navy">Word (.docx)</dd></div>
+      </dl>
+      <div className="mt-4"><TombolKontrak t={t} /></div>
+    </Kartu>
+  );
+}
+
 export default function DetailTransaksi({ kode, baru }) {
   const sesi = useSesi();
   const { siap, items } = useTransaksi(sesi?.email);
@@ -285,6 +303,7 @@ export default function DetailTransaksi({ kode, baru }) {
 
         <div className="space-y-6">
           <PanelBayar key={`${t.pembayaran}-${t.status}`} t={t} />
+          <KartuKontrak t={t} />
           <KartuDenda t={t} />
           {boleh && (
             <Kartu className="p-6">

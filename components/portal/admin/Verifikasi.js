@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, CalendarDays, ChevronDown, Landmark, ZoomIn, BadgeCheck, X, CircleCheck, CircleAlert, ShieldAlert } from "lucide-react";
 import { Kartu, JudulHalaman, StatusBayar } from "../ui";
+import TombolKontrak from "../TombolKontrak";
 import { useSemuaTransaksi, asetTeks, penyewaTeks, TIPE_LABEL, rumusBiaya, fmtWaktu, fmtTgl, fmtJam, periodeTeks } from "@/lib/transaksi";
 import { verifikasiLunas, tolakBukti } from "@/lib/aksi";
 import { getAset, rupiah } from "@/lib/data";
@@ -81,7 +82,10 @@ function Detail({ t, aksiTolak }) {
           <p className="mt-3 text-[11px] leading-relaxed text-slate-500">Pastikan nominal pada bukti sesuai {rupiah(t.total)}. Setelah Lunas, petugas dapat mencatat serah terima fasilitas.</p>
         </>
       ) : (
-        <p className="mt-5 rounded-xl bg-soft p-3 text-center text-xs text-slate-500">{t.pembayaran === "lunas" ? "Pembayaran telah ditandai lunas." : t.pembayaran === "bukti_ditolak" ? `Bukti ditolak: ${t.alasanBukti}` : "Belum ada tindakan verifikasi yang diperlukan."}</p>
+        <div className="mt-5 space-y-3"><p className="rounded-xl bg-soft p-3 text-center text-xs text-slate-500">{t.pembayaran === "lunas" ? "Pembayaran telah ditandai lunas." : t.pembayaran === "bukti_ditolak" ? `Bukti ditolak: ${t.alasanBukti}` : "Belum ada tindakan verifikasi yang diperlukan."}</p>
+          {t.pembayaran === "lunas" && t.kontrak && <p className="text-center text-xs text-slate-500">Kontrak sewa terbit otomatis: <b className="text-navy">{t.kontrak.nomor}</b></p>}
+          {t.pembayaran === "lunas" && <TombolKontrak t={t} varian="garis" label="Unduh Kontrak Sewa (.docx)" />}
+        </div>
       )}
 
       <AnimatePresence>

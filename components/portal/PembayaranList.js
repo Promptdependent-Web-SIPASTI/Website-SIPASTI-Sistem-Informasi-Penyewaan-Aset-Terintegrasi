@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Wallet, CircleCheck, Hourglass, FileX2 } from "lucide-react";
 import { Kartu, JudulHalaman, StatusBayar, Sisa } from "./ui";
+import TombolKontrak from "./TombolKontrak";
 import { useSesi } from "@/lib/useClient";
 import { useTransaksi, asetTeks } from "@/lib/transaksi";
 import { rupiah } from "@/lib/data";
@@ -67,9 +68,12 @@ export default function PembayaranList() {
                     {t.status === "disetujui" && ["belum_dibayar", "bukti_ditolak"].includes(t.pembayaran) && <Sisa batas={t.batasBayar} />}
                   </p>
                 </div>
-                <Link href={`${BASE}/transaksi/${t.kode}`} className={`inline-flex w-fit items-center rounded-xl px-5 py-2.5 text-sm font-bold transition hover:-translate-y-0.5 ${["belum_dibayar", "bukti_ditolak"].includes(t.pembayaran) ? "bg-sun text-navy shadow-md" : "border border-sky text-sky hover:bg-sky hover:text-white"}`}>
-                  {["belum_dibayar", "bukti_ditolak"].includes(t.pembayaran) ? "Bayar Sekarang" : "Lihat Detail"}
-                </Link>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link href={`${BASE}/transaksi/${t.kode}`} className={`inline-flex w-fit items-center rounded-xl px-5 py-2.5 text-sm font-bold transition hover:-translate-y-0.5 ${["belum_dibayar", "bukti_ditolak"].includes(t.pembayaran) ? "bg-sun text-navy shadow-md" : "border border-sky text-sky hover:bg-sky hover:text-white"}`}>
+                    {["belum_dibayar", "bukti_ditolak"].includes(t.pembayaran) ? "Bayar Sekarang" : "Lihat Detail"}
+                  </Link>
+                  {t.pembayaran === "lunas" && !["dibatalkan", "ditolak"].includes(t.status) && <TombolKontrak t={t} varian="garis" label="Kontrak (.docx)" />}
+                </div>
               </li>
             ))}
           </ul>

@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Hourglass, Wallet, KeyRound, CircleCheck, Plus, TriangleAlert, ArrowRight, CalendarDays, Clock3, Info, PackageSearch } from "lucide-react";
+import { Hourglass, Wallet, KeyRound, CircleCheck, Plus, TriangleAlert, ArrowRight, CalendarDays, Clock3, Info, PackageSearch, FileSignature } from "lucide-react";
 import { Kartu, StatusTrx, Sisa } from "./ui";
+import TombolKontrak from "./TombolKontrak";
 import { useSesi } from "@/lib/useClient";
 import { useTransaksi, asetTeks, periodeTeks, fmtTgl, fmtJam } from "@/lib/transaksi";
 import { rupiah } from "@/lib/data";
@@ -24,6 +25,7 @@ export default function DashboardPenyewa() {
     { n: items.filter((t) => t.status === "selesai").length, label: "Selesai", ikon: CircleCheck },
   ];
   const tindakan = items.find(PERLU_BAYAR);
+  const kontrak = items.filter((t) => t.pembayaran === "lunas" && ["disetujui", "sedang_disewa"].includes(t.status));
   const jadwal = items
     .filter((t) => ["diajukan", "disetujui", "sedang_disewa"].includes(t.status))
     .sort((a, b) => a.tanggalMulai.localeCompare(b.tanggalMulai))
@@ -82,6 +84,21 @@ export default function DashboardPenyewa() {
               <Link href={`${BASE}/transaksi/${tindakan.kode}`} className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-sun px-5 py-3 text-sm font-bold text-navy shadow-md transition hover:-translate-y-0.5">
                 <Wallet size={16} /> Bayar Sekarang
               </Link>
+            </Kartu>
+          )}
+
+          {kontrak.length > 0 && (
+            <Kartu className="border-l-4 border-l-sky p-6">
+              <p className="flex items-center gap-2 text-lg font-bold text-navy"><FileSignature size={20} className="text-sky" /> Kontrak Sewa Tersedia</p>
+              <p className="mt-1 text-sm text-slate-600">Pembayaran telah diverifikasi admin. Unduh kontrak sewa (.docx) untuk dicetak dan ditandatangani.</p>
+              <ul className="mt-4 divide-y divide-pale">
+                {kontrak.slice(0, 3).map((t) => (
+                  <li key={t.kode} className="flex flex-col justify-between gap-3 py-3 sm:flex-row sm:items-center">
+                    <div><p className="text-sm font-bold text-navy">{t.kode} · {asetTeks(t)}</p><p className="text-xs text-slate-500">{t.kontrak ? `Nomor ${t.kontrak.nomor}` : "Nomor kontrak diterbitkan saat diunduh"}</p></div>
+                    <TombolKontrak t={t} varian="kecil" label="Unduh Kontrak" />
+                  </li>
+                ))}
+              </ul>
             </Kartu>
           )}
 

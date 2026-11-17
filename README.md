@@ -33,7 +33,7 @@ npm run build && npm start
 | `/dashboard/penyewa/riwayat` | Riwayat penyewaan (selesai, ditolak, dibatalkan) |
 | `/dashboard/penyewa/profil` | Profil, keluar, setel ulang data demo |
 | `/dashboard/petugas` | Dashboard, Jadwal Penyewaan, Serah Terima, Pengembalian (hitung denda otomatis), Kondisi dan Kerusakan Aset |
-| `/dashboard/admin` | Dashboard, Persetujuan (pemeriksaan kelayakan otomatis), Verifikasi Pembayaran, Pembatalan dan Refund, Konfirmasi Denda, Rekap Transaksi (ekspor CSV), Manajemen Aset, Kategori, Tarif, Pengguna, Pengaturan Sistem |
+| `/dashboard/admin` | Dashboard, Persetujuan (pemeriksaan kelayakan otomatis), Verifikasi Pembayaran, Pembatalan dan Refund, Konfirmasi Denda, Rekap Transaksi (ekspor CSV), **Laporan Tahunan (ekspor Excel)**, Manajemen Aset, Kategori, Tarif, Pengguna, Pengaturan Sistem |
 
 ## Akun demo (simulasi, disimpan di localStorage)
 | Peran | Email | Kata sandi |
@@ -55,6 +55,20 @@ lib/auth.js   autentikasi simulasi (akan diganti Supabase Auth)
 public/logo/  logo berlatar transparan (icon, wordmark, full)
 ```
 
+## Fitur revisi kedua
+- **Kontrak sewa otomatis (.docx):** saat admin menandai pembayaran **Lunas**, sistem menerbitkan nomor kontrak
+  (`NNN/PKS/SIPASTI-FMIPA/<bulan romawi>/<tahun>`) dan menyimpan salinan parameter (persentase denda, toleransi).
+  Penyewa mengunduh dokumen dari Dashboard, Detail Transaksi, atau menu Pembayaran. Dokumen dibuat di peramban
+  dengan library `docx` (`lib/kontrak.js`) — **tidak membutuhkan database untuk proses pembuatannya**. Pihak Pertama:
+  Prof. Dr. Edy Cahyono, M.Si. (Dekan FMIPA).
+- **Laporan Tahunan (admin):** pilih tahun, lihat ringkasan, grafik per bulan, daftar penyewa, per aset, dan detail
+  transaksi. Tombol **Unduh Excel (.xlsx)** (`lib/laporanExcel.js`, library `exceljs`) menghasilkan 5 sheet dengan total
+  berupa rumus Excel. Pendapatan bersih = pembayaran lunas − refund ditransfer + denda lunas.
+- **Data contoh setahun:** 20 transaksi (SPT-0101 s.d. SPT-0120, Januari–Oktober 2026) untuk mengisi laporan.
+- **Perbaikan:** pengembalian tanpa denda langsung berstatus Selesai.
+
+Setelah memperbarui kode, jalankan `npm install` (ada dependensi baru: `docx`, `exceljs`).
+
 ## Alur demo lengkap
 1. **Penyewa** mengajukan sewa (dokumen wajib diunggah).
 2. **Admin** → Persetujuan Pengajuan → Setujui.
@@ -62,6 +76,7 @@ public/logo/  logo berlatar transparan (icon, wordmark, full)
 4. **Admin** → Verifikasi Pembayaran → Tandai Lunas.
 5. **Petugas** → Serah Terima → catat; lalu Pengembalian (denda keterlambatan dihitung otomatis; kerusakan diusulkan).
 6. **Admin** → Konfirmasi Denda → konfirmasi dan tandai lunas; transaksi selesai.
+7. **Admin** → Laporan Tahunan → Unduh Excel. **Penyewa** → Detail Transaksi → Unduh Kontrak Sewa (setelah langkah 4).
 
 Semua peran memakai data yang sama (localStorage, `lib/transaksi.js`). Setel ulang data lewat halaman Profil penyewa.
 

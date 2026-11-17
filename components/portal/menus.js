@@ -1,6 +1,6 @@
 import {
   LayoutGrid, SquarePlus, ReceiptText, Wallet, History, UserRound, Archive, Shapes, BadgeDollarSign, Users, CircleCheckBig, ShieldCheck,
-  CircleX, Gavel, ChartNoAxesColumn, Settings, CalendarDays, ClipboardCheck, ClipboardPlus, Wrench,
+  CircleX, Gavel, ChartNoAxesColumn, FileSpreadsheet, Settings, CalendarDays, ClipboardCheck, ClipboardPlus, Wrench,
 } from "lucide-react";
 
 export const MENUS = {
@@ -41,7 +41,10 @@ export const MENUS = {
         { href: "/dashboard/admin/refund", label: "Pembatalan dan Refund", icon: CircleX, judul: "Pembatalan dan Refund" },
         { href: "/dashboard/admin/denda", label: "Konfirmasi Denda", icon: Gavel, judul: "Konfirmasi Denda" },
       ] },
-      { judul: "Laporan", items: [{ href: "/dashboard/admin/rekap", label: "Rekap Transaksi", icon: ChartNoAxesColumn, judul: "Rekap Transaksi" }] },
+      { judul: "Laporan", items: [
+        { href: "/dashboard/admin/rekap", label: "Rekap Transaksi", icon: ChartNoAxesColumn, judul: "Rekap Transaksi" },
+        { href: "/dashboard/admin/laporan", label: "Laporan Tahunan", icon: FileSpreadsheet, judul: "Laporan Tahunan" },
+      ] },
       { judul: "Sistem", items: [{ href: "/dashboard/admin/pengaturan", label: "Pengaturan Sistem", icon: Settings, judul: "Pengaturan Sistem" }] },
     ],
   },
