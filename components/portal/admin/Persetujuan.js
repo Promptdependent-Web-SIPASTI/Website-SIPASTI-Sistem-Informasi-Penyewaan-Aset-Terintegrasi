@@ -6,6 +6,7 @@ import { Inbox, Search, CalendarDays, Check, X, FileText, IdCard, ClipboardList,
 import { Kartu, JudulHalaman, StatusTrx } from "../ui";
 import { useSemuaTransaksi, asetTeks, periodeTeks, penyewaUnit, penyewaTeks, rumusBiaya, fmtWaktu, fmtTgl, mulaiMs } from "@/lib/transaksi";
 import { setujui, tolak } from "@/lib/aksi";
+import { bukaBerkas } from "@/lib/berkas";
 import { getAset, rupiah } from "@/lib/data";
 import { HARI_PANJANG, fromISO } from "@/lib/waktu";
 
@@ -68,7 +69,7 @@ function Detail({ t, semua, indeks }) {
             {t.dokumen.map((d) => (
               <div key={d.jenis} className="flex items-center justify-between gap-2 rounded-lg bg-soft px-3 py-2.5">
                 <div className="flex min-w-0 items-center gap-2.5">{d.jenis.startsWith("Identitas") ? <IdCard size={17} className="shrink-0 text-sky" /> : d.jenis.startsWith("Rincian") ? <ClipboardList size={17} className="shrink-0 text-sky" /> : <FileText size={17} className="shrink-0 text-sky" />}<div className="min-w-0"><p className="text-xs font-bold text-navy">{d.jenis}</p><p className="truncate text-[11px] text-slate-500">{d.nama}</p></div></div>
-                <span className="shrink-0 rounded-md border border-sky px-2.5 py-1 text-xs font-bold text-sky">Lihat</span>
+                <button type="button" onClick={() => bukaBerkas("dokumen", d.kunci)} className="shrink-0 rounded-md border border-sky px-2.5 py-1 text-xs font-bold text-sky hover:bg-pale">Lihat</button>
               </div>
             ))}
           </dd>

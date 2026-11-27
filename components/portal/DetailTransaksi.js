@@ -14,7 +14,10 @@ import AsetImage from "@/components/AsetImage";
 import { getAset, rupiah } from "@/lib/data";
 import { HARI_PANJANG, fromISO } from "@/lib/waktu";
 import { useSesi } from "@/lib/useClient";
-import { useTransaksi, ubahTransaksi, hitungRefund, totalDenda, rumusBiaya, satuanTeks, fmtJam, fmtTgl, fmtWaktu, LANGKAH_ALUR, STATUS_TRX } from "@/lib/transaksi";
+import { batalkanOlehPenyewa } from "@/lib/aksi";
+import { rpc } from "@/lib/store";
+import { bukaBerkas, unggahBerkas } from "@/lib/berkas";
+import { useTransaksi, hitungRefund, totalDenda, rumusBiaya, satuanTeks, fmtJam, fmtTgl, fmtWaktu, LANGKAH_ALUR, STATUS_TRX } from "@/lib/transaksi";
 
 const BASE = "/dashboard/penyewa";
 const REKENING = { nomor: "1370 0192 8472 001", bank: "Bank Mandiri a.n. FMIPA UNNES" };
@@ -55,7 +58,9 @@ function Stepper({ t }) {
 }
 
 function PanelBayar({ t }) {
+  const sesi = useSesi();
   const [bukti, setBukti] = useState(null);
+  const [mengirim, setMengirim] = useState(false);
   const [tersalin, setTersalin] = useState(false);
   const sisa = useSisaWaktu(t.batasBayar);
 
@@ -64,7 +69,16 @@ function PanelBayar({ t }) {
     setTersalin(true);
     setTimeout(() => setTersalin(false), 2000);
   };
-  const kirim = () => ubahTransaksi(t.kode, { pembayaran: "menunggu_verifikasi", buktiBayar: { ...bukti, waktu: Date.now() }, alasanBukti: null });
+  const kirim = async () => {
+    setMengirim(true);
+    try {
+      const path = await unggahBerkas("bukti-bayar", sesi.id, t.id, bukti.file, "bukti_");
+      await rpc("kirim_bukti_bayar", { p_id: t.id, p_penyimpanan: "supabase", p_object_key: path, p_nama: bukti.nama });
+    } catch (err) {
+      window.alert(err.message);
+      setMengirim(false);
+    }
+  };
 
   const kepala = (
     <div className="flex items-center justify-between">
@@ -134,7 +148,7 @@ function PanelBayar({ t }) {
       </div>
       <p className="mb-2 mt-5 text-sm font-bold text-navy">Bukti Transfer Pembayaran</p>
       <UploadBox id="up-bukti" ikon={Wallet} judul="Unggah Bukti Pembayaran" keterangan="Tarik dan lepas berkas ke sini atau klik untuk memilih. Format: JPG, PNG, atau PDF (maks. 5 MB)" nilai={bukti} onChange={setBukti} />
-      <button type="button" disabled={!bukti || (sisa?.lewat ?? false)} onClick={kirim} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-sun py-3.5 text-sm font-bold text-navy shadow-md transition enabled:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50">
+      <button type="button" disabled={!bukti || mengirim || (sisa?.lewat ?? false)} onClick={kirim} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-sun py-3.5 text-sm font-bold text-navy shadow-md transition enabled:hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50">
         <Send size={16} /> Kirim Bukti Pembayaran
       </button>
     </Kartu>
@@ -149,8 +163,8 @@ function ModalBatal({ t, tutup }) {
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
   }, [tutup]);
-  const yakin = () => {
-    ubahTransaksi(t.kode, { refund: rf, alasanBatal: alasan.trim() || null, catatanAdmin: "Dibatalkan oleh penyewa." }, "dibatalkan");
+  const yakin = async () => {
+    await batalkanOlehPenyewa(t, alasan);
     tutup();
   };
   return (
@@ -323,7 +337,7 @@ export default function DetailTransaksi({ kode, baru }) {
               <span className="mx-auto flex size-14 items-center justify-center rounded-full bg-pale text-sky"><FileText size={26} /></span>
               <p className="mt-4 font-bold text-navy">{lihat.jenis}</p>
               <p className="mt-1 break-all text-sm text-ink">{lihat.nama}</p>
-              <p className="mt-3 text-xs text-slate-500">Pratinjau berkas akan tersedia setelah terhubung ke Supabase Storage.</p>
+              <button type="button" onClick={() => bukaBerkas("dokumen", lihat.kunci)} className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-sky hover:underline"><Eye size={15} /> Buka berkas</button>
               <button type="button" onClick={() => setLihat(null)} className="mt-5 w-full rounded-xl bg-sun py-2.5 text-sm font-bold text-navy">Tutup</button>
             </motion.div>
           </motion.div>

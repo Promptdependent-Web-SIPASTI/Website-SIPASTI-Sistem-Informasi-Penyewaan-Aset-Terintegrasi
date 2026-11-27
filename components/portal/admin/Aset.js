@@ -5,7 +5,7 @@ import { AnimatePresence } from "framer-motion";
 import { Search, Plus, Pencil, Info, CircleAlert } from "lucide-react";
 import { Kartu, JudulHalaman } from "../ui";
 import Modal from "../Modal";
-import { useAsetList, ubahAset, tambahAsetBaru, useSubkategori, setelUlangAset } from "@/lib/asetStore";
+import { useAsetList, ubahAset, tambahAsetBaru, useSubkategori } from "@/lib/asetStore";
 import { rupiah, satuanLabel } from "@/lib/data";
 
 const KONDISI = ["Baik", "Rusak Ringan", "Rusak Berat", "Dalam Pemeliharaan"];
@@ -22,7 +22,7 @@ function FormAset({ aset, semua, subkategori, tutup }) {
   const set = (k) => (e) => { setF({ ...f, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }); setG({ ...g, [k]: "" }); };
   const isR = f.kategori === "ruangan";
 
-  function simpan(e) {
+  async function simpan(e) {
     e.preventDefault();
     const x = {};
     if (f.nama.trim().length < 3) x.nama = "Nama aset wajib diisi.";
@@ -33,17 +33,22 @@ function FormAset({ aset, semua, subkategori, tutup }) {
     if (Object.keys(x).length) return;
     const n = Number(f.jumlah);
     const status = f.aktif ? "Tersedia" : "Tidak tersedia";
+    try {
     if (baru) {
       const awalan = isR ? (f.subkategori === "Laboratorium" ? "LAB" : f.subkategori === "Ruang Rapat" ? "RPT" : "FAS") : "ALT";
       const urut = semua.filter((a) => a.kode.startsWith(awalan)).length + 1;
       const kode = `${awalan}-${String(urut).padStart(2, "0")}`;
-      tambahAsetBaru({
+      await tambahAsetBaru({
         slug: `${slugify(f.nama)}-${kode.toLowerCase()}`, kode, nama: f.nama.trim(), kategori: f.kategori, subkategori: f.subkategori, lokasi: f.lokasi.trim(),
         ...(isR ? { kapasitas: n } : { stok: n, stokTotal: n, pengelola: f.lokasi.trim() }), kondisi: f.kondisi, status, ...(f.aktif ? {} : { statusKet: "dinonaktifkan" }),
         satuan: f.satuan, tarif: Number(f.tarif), ringkas: `${f.nama.trim()} — ${f.subkategori}.`, deskripsi: `${f.nama.trim()} di ${f.lokasi.trim()}.`, fasilitas: "-", aturan: ["Pengajuan paling lambat H-2 sebelum hari pemakaian.", "Penyewaan hanya Senin–Sabtu, sesi 07.00–11.30 dan 12.30–18.00 WIB."], foto: null,
       });
     } else {
-      ubahAset(aset.slug, { nama: f.nama.trim(), lokasi: f.lokasi.trim(), ...(isR ? { kapasitas: n } : { stokTotal: n, stok: Math.min(aset.stok, n) }), kondisi: f.kondisi, status, statusKet: f.aktif ? undefined : aset.statusKet ?? "dinonaktifkan", satuan: f.satuan, tarif: Number(f.tarif) });
+      await ubahAset(aset.slug, { nama: f.nama.trim(), lokasi: f.lokasi.trim(), ...(isR ? { kapasitas: n } : { stokTotal: n, stok: Math.min(aset.stok, n) }), kondisi: f.kondisi, status, statusKet: f.aktif ? undefined : aset.statusKet ?? "dinonaktifkan", satuan: f.satuan, tarif: Number(f.tarif) });
+    }
+    } catch (err) {
+      window.alert(err.message);
+      return;
     }
     tutup();
   }
@@ -82,7 +87,7 @@ export default function Aset() {
     <div className="space-y-6">
       <JudulHalaman judul="Manajemen Aset" sub="Kelola data aset: lokasi, kapasitas/stok, kondisi, tarif, dan status aktif."
         aksi={<button type="button" onClick={() => setModal("baru")} className="inline-flex w-fit items-center gap-2 rounded-xl bg-sun px-6 py-3 text-sm font-bold text-navy shadow-md transition hover:-translate-y-0.5"><Plus size={18} /> Tambah Aset</button>} />
-      <p className="flex gap-2.5 rounded-xl bg-pale/60 px-4 py-3 text-xs leading-relaxed text-sky"><Info size={15} className="mt-0.5 shrink-0" /> Tahap front end: perubahan disimpan di peramban ini dan memengaruhi halaman admin/petugas. Katalog publik memakai data tetap sampai backend (Supabase) terhubung. <button type="button" onClick={() => { if (window.confirm("Kembalikan semua perubahan aset ke data awal?")) setelUlangAset(); }} className="font-bold underline">Setel ulang</button></p>
+      <p className="flex gap-2.5 rounded-xl bg-pale/60 px-4 py-3 text-xs leading-relaxed text-sky"><Info size={15} className="mt-0.5 shrink-0" /> Perubahan disimpan di database Supabase dan langsung berlaku di katalog publik, halaman admin, dan halaman petugas.<button type="button" onClick={() => { if (window.confirm("Kembalikan semua perubahan aset ke data awal?")) setelUlangAset(); }} className="font-bold underline">Setel ulang</button></p>
       <Kartu className="p-5 md:p-6">
         <div className="flex flex-col gap-3 sm:flex-row">
           <span className="relative flex-1"><Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" /><input aria-label="Cari aset" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Cari nama atau kode aset…" className="w-full rounded-xl bg-pale py-2.5 pl-10 pr-3 text-sm outline-none ring-sky/40 placeholder:text-slate-500 focus:ring-2" /></span>

@@ -7,7 +7,7 @@ const OK = ["application/pdf", "image/jpeg", "image/png"];
 const MAKS = 5 * 1024 * 1024;
 const ukuranTeks = (b) => (b >= 1048576 ? `${(b / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1024))} KB`);
 
-// Hanya menyimpan metadata berkas (nama dan ukuran) — unggah sungguhan menyusul via Supabase Storage.
+// Memilih berkas dan memvalidasi jenis/ukuran. Objek File ikut dikirim ke induk untuk diunggah ke Supabase Storage.
 export default function UploadBox({ judul, keterangan, ikon: Ikon = CloudUpload, nilai, onChange, galat, id }) {
   const ref = useRef(null);
   const [seret, setSeret] = useState(false);
@@ -18,7 +18,7 @@ export default function UploadBox({ judul, keterangan, ikon: Ikon = CloudUpload,
     if (!OK.includes(file.type)) return setLokal("Format berkas harus PDF, JPG, atau PNG.");
     if (file.size > MAKS) return setLokal("Ukuran berkas maksimal 5 MB.");
     setLokal("");
-    onChange({ nama: file.name, ukuran: ukuranTeks(file.size) });
+    onChange({ nama: file.name, ukuran: ukuranTeks(file.size), file });
   }
   const pesan = lokal || galat;
 

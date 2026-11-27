@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import AsetImage from "@/components/AsetImage";
 import { rupiah, satuanLabel } from "@/lib/data";
+import { useAsetList } from "@/lib/asetStore";
 import { useHariIni, useSesi } from "@/lib/useClient";
 import {
   BULAN, HARI, SESI, SEMUA_JAM, minTanggalSewa, mulaiHari, toISO, fromISO, formatTanggal,
@@ -261,7 +262,9 @@ function Kalender({ aset, tanggal, setTanggal }) {
   );
 }
 
-export default function DetailClient({ aset }) {
+export default function DetailClient({ aset: asetAwal }) {
+  // data hidup dari database (stok/tarif/jadwal) menggantikan salinan dari server begitu termuat
+  const aset = useAsetList().find((a) => a.slug === asetAwal.slug && a.id) ?? asetAwal;
   const [tab, setTab] = useState("spesifikasi");
   const [tanggalPilih, setTanggal] = useState("");
   const hariIni = useHariIni();

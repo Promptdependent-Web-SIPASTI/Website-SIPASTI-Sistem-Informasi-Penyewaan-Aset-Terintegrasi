@@ -40,15 +40,15 @@ export default function RegisterForm() {
     setE(x);
     if (Object.keys(x).length) return;
     setProses(true);
-    setTimeout(() => {
-      const r = daftarAkun({ nama: f.nama.trim(), email: f.email.trim(), sandi: f.sandi, tipe, idn: f.idn, telp: f.telp });
+    (async () => {
+      const r = await daftarAkun({ nama: f.nama.trim(), email: f.email.trim(), sandi: f.sandi, tipe, idn: f.idn, telp: f.telp });
       if (!r.ok) {
         setProses(false);
         setE({ email: r.pesan });
         return;
       }
       router.push("/masuk?baru=1");
-    }, 600);
+    })();
   }
 
   const inp = (bad) => `w-full rounded-xl border bg-field px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:bg-white ${bad ? "border-red-300 bg-red-50/40 focus:border-red-400" : "border-pale focus:border-sky"}`;

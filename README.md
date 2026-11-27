@@ -83,3 +83,13 @@ Semua peran memakai data yang sama (localStorage, `lib/transaksi.js`). Setel ula
 ## Catatan
 - Foto aset: lihat `public/images/aset/README.txt`. Tanpa foto, tampil placeholder.
 - Data dan jadwal bersifat simulasi; integrasi Supabase (Auth, database, Storage) menyusul.
+
+
+## Menyambungkan ke Supabase (tahap backend)
+
+1. Jalankan berurutan di Supabase SQL Editor: `db/01_skema.sql`, `02_keamanan.sql`, `03_data_dummy.sql`, `04_penyesuaian_front_end.sql`.
+2. Salin `.env.example` menjadi `.env.local`, isi URL dan anon key. Isi juga `SUPABASE_SERVICE_ROLE_KEY` (hanya server) agar admin dapat membuat akun petugas.
+3. `npm install`, lalu `npm run dev`. Di Vercel, isi variabel lingkungan yang sama pada Settings > Environment Variables.
+4. Akun contoh dari data dummy (sandi `Sipasti123`): `mahasiswa@students.unnes.ac.id`, `petugas@mail.unnes.ac.id`, `admin@mail.unnes.ac.id`.
+
+Data tidak lagi disimpan di localStorage: login memakai Supabase Auth, transaksi dan aset dibaca dari tabel (dengan RLS), dan berkas privat (dokumen, bukti bayar) diunggah ke Supabase Storage.

@@ -4,11 +4,13 @@ import Hero from "@/components/Hero";
 import AsetCard from "@/components/AsetCard";
 import FaqAccordion from "@/components/FaqAccordion";
 import { Reveal } from "@/components/motion";
-import { ASET, KATEGORI, FAQ, LANGKAH, getAset } from "@/lib/data";
+import { KATEGORI, FAQ, LANGKAH } from "@/lib/data";
+import { ambilAsetServer } from "@/lib/asetServer";
 
 const IKON = { Search, FileUp, ShieldCheck, Wallet, PackageCheck };
-const UNGGULAN = ["aula-d12", "laboratorium-ilmu-komputer", "proyektor-dan-layar-proyektor"].map(getAset);
-const jumlah = (k) => ASET.filter((a) => a.kategori === k).length;
+// Katalog dibaca dari Supabase dan disegarkan tiap 30 detik; bila database tidak terjangkau dipakai data cadangan.
+export const revalidate = 30;
+const SLUG_UNGGULAN = ["aula-d12", "laboratorium-ilmu-komputer", "proyektor-dan-layar-proyektor"];
 
 function SectionTitle({ judul, sub, center = false, light = false }) {
   return (
@@ -20,7 +22,10 @@ function SectionTitle({ judul, sub, center = false, light = false }) {
   );
 }
 
-export default function Beranda() {
+export default async function Beranda() {
+  const ASET = await ambilAsetServer();
+  const UNGGULAN = SLUG_UNGGULAN.map((s) => ASET.find((a) => a.slug === s)).filter(Boolean);
+  const jumlah = (k) => ASET.filter((a) => a.kategori === k).length;
   const tanda = [...ASET.map((a) => a.nama), "Senin–Sabtu 07.00–18.00 WIB"];
   return (
     <>

@@ -1,16 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock, CircleCheck, CircleAlert, ArrowRight, Send, Receipt, Info, IdCard, FileText, ClipboardList, LoaderCircle, MapPin, Users, Boxes } from "lucide-react";
 import { Kartu, Remah } from "./ui";
 import UploadBox from "./UploadBox";
 import AsetImage from "@/components/AsetImage";
-import { ASET, getAset, rupiah, satuanLabel } from "@/lib/data";
-import { SEMUA_JAM, durasiJam, fromISO, sesiMulai, sesiSelesai, statusHari, tambahHari, toISO, minTanggalSewa } from "@/lib/waktu";
+import { getAset, rupiah, satuanLabel } from "@/lib/data";
+import { useAsetList } from "@/lib/asetStore";
+import { supabase } from "@/lib/supabase";
+import { pesanGalat, segarkan } from "@/lib/store";
+import { unggahBerkas } from "@/lib/berkas";
+import { SEMUA_JAM, durasiJam, fromISO, jamBentrok, sesiMulai, sesiSelesai, statusHari, tambahHari, toISO, minTanggalSewa } from "@/lib/waktu";
 import { useHariIni, useSesi } from "@/lib/useClient";
-import { cariTanggalAwal, fmtTgl, tambahTransaksi, TIPE_LABEL } from "@/lib/transaksi";
+import { cariTanggalAwal, fmtTgl } from "@/lib/transaksi";
 
 const BASE = "/dashboard/penyewa";
 const JAM_MULAI = SEMUA_JAM.slice(0, -1).filter((t) => t !== "11:30");
@@ -40,6 +44,7 @@ function cekJadwal({ aset, t1, t2, jm, js, minD }) {
   if (aset.satuan === "jam") {
     if (durasiJam(jm, js) <= 0) return { ok: false, pesan: "Jam selesai harus setelah jam mulai." };
     if (sesiMulai(jm) !== sesiSelesai(js)) return { ok: false, pesan: "Rentang jam tidak boleh melewati waktu istirahat (11.30–12.30)." };
+    if (jamBentrok(aset, t1, jm, js)) return { ok: false, pesan: "Jam yang dipilih bentrok dengan penyewaan lain pada tanggal tersebut." };
   }
   return { ok: true, pesan: `Jadwal tersedia pada ${periodeNarasi(t1, t2)}.` };
 }
@@ -56,6 +61,8 @@ function Langkah({ n, judul }) {
 export default function FormPengajuan({ awal }) {
   const router = useRouter();
   const sesi = useSesi();
+  const asetList = useAsetList(); // juga memicu render ulang saat jadwal dari database berubah
+  const kunciIdem = useRef(null);
   const hariIni = useHariIni();
   const minD = hariIni ? minTanggalSewa() : null;
 
@@ -86,7 +93,7 @@ export default function FormPengajuan({ awal }) {
   const jumlahTeks = !aset ? "—" : isRuangan ? `1 unit ${aset.subkategori === "Aula" ? "aula" : "ruangan"}` : `${jumlah} ${aset.stokSatuan ?? "unit"}`;
   const refForm = `#SIPASTI-REQ-${hariIni ? hariIni.slice(0, 4) + hariIni.slice(5, 7) : "000000"}`;
 
-  function kirim(e) {
+  async function kirim(e) {
     e.preventDefault();
     const g = {};
     if (!aset) g.aset = "Pilih aset yang akan disewa.";
@@ -102,20 +109,42 @@ export default function FormPengajuan({ awal }) {
       return;
     }
     setProses(true);
-    setTimeout(() => {
-      const kode = tambahTransaksi({
-        email: sesi.email, penyewa: { nama: sesi.nama, tipe: sesi.tipe, idn: sesi.idn, unit: TIPE_LABEL[sesi.tipe] ?? "Penyewa" }, asetSlug: aset.slug, asetNama: aset.nama, kodeAset: aset.kode, kategori: aset.kategori, satuan: aset.satuan, tarif: aset.tarif,
-        jumlah: isRuangan ? 1 : jumlah, durasi, tanggalMulai: t1, tanggalSelesai: t2,
-        ...(aset.satuan === "jam" ? { jamMulai: jm, jamSelesai: js } : {}),
-        tujuan: tujuan.trim(), total,
-        dokumen: [
-          { jenis: "Surat Permohonan / Perizinan", ...dok.surat },
-          { jenis: "Identitas / Kartu Tanda Mahasiswa (KTM)", ...dok.identitas },
-          ...(dok.rincian ? [{ jenis: "Rincian Kegiatan", ...dok.rincian }] : []),
-        ],
-      });
-      router.push(`${BASE}/transaksi/${kode}?baru=1`);
-    }, 600);
+    try {
+      kunciIdem.current ??= typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `k-${Date.now()}-${Math.random()}`;
+      // 1) simpan pengajuan (validasi aturan bisnis dan perhitungan biaya dilakukan database)
+      let id, nomor;
+      const ins = await supabase.from("penyewaan").insert({
+        penyewa_id: sesi.id, aset_id: aset.id, satuan: aset.satuan, jumlah: isRuangan ? 1 : jumlah,
+        tanggal_mulai: t1, tanggal_selesai: t2, ...(aset.satuan === "jam" ? { jam_mulai: jm, jam_selesai: js } : {}),
+        tujuan: tujuan.trim(), kunci_idempotensi: kunciIdem.current,
+      }).select("id, nomor").single();
+      if (ins.error && ins.error.code === "23505") {
+        // kirim ulang dengan kunci yang sama: lanjutkan pengajuan yang sudah tersimpan, jangan buat ganda
+        const ada = await supabase.from("penyewaan").select("id, nomor").eq("kunci_idempotensi", kunciIdem.current).maybeSingle();
+        if (!ada.data) throw new Error(pesanGalat(ins.error));
+        ({ id, nomor } = ada.data);
+      } else if (ins.error) throw new Error(pesanGalat(ins.error));
+      else ({ id, nomor } = ins.data);
+      // 2) unggah dokumen ke penyimpanan privat lalu catat metadatanya
+      const daftarDok = [
+        ["Surat Permohonan / Perizinan", dok.surat, "surat_"],
+        ["Identitas / Kartu Tanda Mahasiswa (KTM)", dok.identitas, "identitas_"],
+        ...(dok.rincian ? [["Rincian Kegiatan", dok.rincian, "rincian_"]] : []),
+      ];
+      const sudah = await supabase.from("dokumen_penyewaan").select("jenis").eq("penyewaan_id", id);
+      for (const [jenis, d, awalan] of daftarDok) {
+        if (sudah.data?.some((x) => x.jenis === jenis)) continue;
+        const path = await unggahBerkas("dokumen", sesi.id, id, d.file, awalan);
+        const r = await supabase.from("dokumen_penyewaan").insert({ penyewaan_id: id, jenis, nama_berkas: d.nama, ukuran_byte: d.file.size, penyimpanan: "supabase", object_key: path });
+        if (r.error) throw new Error(r.error.message);
+      }
+      await segarkan();
+      router.push(`${BASE}/transaksi/${nomor}?baru=1`);
+    } catch (err) {
+      setProses(false);
+      setGalat({ kirim: err.message });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }
 
   const inp = (bad) => `w-full rounded-xl border bg-pale/60 px-4 py-3 text-sm font-medium text-navy outline-none transition focus:bg-white ${bad ? "border-red-300 bg-red-50/50" : "border-transparent focus:border-sky"}`;
@@ -132,7 +161,7 @@ export default function FormPengajuan({ awal }) {
 
       {ringkasanGalat && (
         <p role="alert" className="mt-6 flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-          <CircleAlert size={18} className="mt-0.5 shrink-0" /> Periksa kembali isian Anda. Beberapa data belum lengkap atau belum sesuai ketentuan.
+          <CircleAlert size={18} className="mt-0.5 shrink-0" /> {galat.kirim ?? "Periksa kembali isian Anda. Beberapa data belum lengkap atau belum sesuai ketentuan."}
         </p>
       )}
 
@@ -160,7 +189,7 @@ export default function FormPengajuan({ awal }) {
                   <option value="">— Pilih aset —</option>
                   {["ruangan", "peralatan"].map((k) => (
                     <optgroup key={k} label={k === "ruangan" ? "Fasilitas dan Ruangan" : "Peralatan dan Perlengkapan"}>
-                      {ASET.filter((a) => a.kategori === k && a.status !== "Tidak tersedia").map((a) => <option key={a.slug} value={a.slug}>{a.kode} · {a.nama}</option>)}
+                      {asetList.filter((a) => a.kategori === k && a.status !== "Tidak tersedia").map((a) => <option key={a.slug} value={a.slug}>{a.kode} · {a.nama}</option>)}
                     </optgroup>
                   ))}
                 </select>

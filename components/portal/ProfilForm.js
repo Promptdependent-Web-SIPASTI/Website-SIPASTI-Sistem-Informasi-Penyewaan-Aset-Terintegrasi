@@ -6,7 +6,6 @@ import { CircleCheck, CircleAlert, LogOut, RotateCcw } from "lucide-react";
 import { Kartu, JudulHalaman } from "./ui";
 import { useSesi } from "@/lib/useClient";
 import { keluar, perbaruiProfil } from "@/lib/auth";
-import { setelUlang } from "@/lib/transaksi";
 
 const TIPE = { mahasiswa: "Mahasiswa", dosen: "Dosen", staf: "Staf" };
 
@@ -17,7 +16,7 @@ function Isi({ sesi }) {
   const [galat, setGalat] = useState({});
   const [ok, setOk] = useState(false);
 
-  function simpan(e) {
+  async function simpan(e) {
     e.preventDefault();
     const g = {};
     if (nama.trim().length < 3) g.nama = "Nama lengkap wajib diisi.";
@@ -25,8 +24,12 @@ function Isi({ sesi }) {
     setGalat(g);
     setOk(false);
     if (Object.keys(g).length) return;
-    perbaruiProfil({ nama: nama.trim(), telp });
-    setOk(true);
+    try {
+      await perbaruiProfil({ nama: nama.trim(), telp });
+      setOk(true);
+    } catch (err) {
+      setGalat({ nama: err.message });
+    }
   }
   const inp = (bad) => `w-full rounded-xl border bg-field px-4 py-3 text-sm outline-none transition focus:bg-white ${bad ? "border-red-300 focus:border-red-400" : "border-pale focus:border-sky"}`;
   const lab = "mb-1.5 block text-xs font-bold uppercase tracking-wide text-navy";
@@ -56,11 +59,6 @@ function Isi({ sesi }) {
           <Kartu className="p-6">
             <h2 className="font-bold text-navy">Sesi</h2>
             <button type="button" onClick={() => { keluar(); router.push("/masuk"); }} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-red-200 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-50"><LogOut size={16} /> Keluar</button>
-          </Kartu>
-          <Kartu className="border-dashed p-6">
-            <h2 className="font-bold text-navy">Data simulasi</h2>
-            <p className="mt-1 text-xs text-slate-500">Khusus tahap front end: kembalikan transaksi contoh ke kondisi awal.</p>
-            <button type="button" onClick={() => { if (window.confirm("Setel ulang seluruh transaksi simulasi ke kondisi awal?")) setelUlang(); }} className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-sky py-2.5 text-sm font-bold text-sky transition hover:bg-sky hover:text-white"><RotateCcw size={15} /> Setel Ulang Data Demo</button>
           </Kartu>
         </div>
       </div>

@@ -7,6 +7,7 @@ import { Kartu, JudulHalaman, StatusBayar } from "../ui";
 import TombolKontrak from "../TombolKontrak";
 import { useSemuaTransaksi, asetTeks, penyewaTeks, TIPE_LABEL, rumusBiaya, fmtWaktu, fmtTgl, fmtJam, periodeTeks } from "@/lib/transaksi";
 import { verifikasiLunas, tolakBukti } from "@/lib/aksi";
+import { bukaBerkas } from "@/lib/berkas";
 import { getAset, rupiah } from "@/lib/data";
 import { HARI_PANJANG, fromISO } from "@/lib/waktu";
 
@@ -31,7 +32,7 @@ function Struk({ t, besar = false }) {
         {baris.map(([k, v]) => <div key={k} className="flex justify-between gap-3"><dt className="text-slate-500">{k}</dt><dd className="text-right font-bold text-navy">{v}</dd></div>)}
         <div className="flex justify-between gap-3 border-t border-pale pt-1.5"><dt className="text-slate-500">Status Transfer</dt><dd className="flex items-center gap-1 font-bold text-emerald-600"><CircleCheck size={12} /> BERHASIL / SUKSES</dd></div>
       </dl>
-      {b && <p className="mt-3 text-center text-[10px] text-slate-400">Pratinjau simulasi dari berkas {b.nama}</p>}
+      {b && <button type="button" onClick={() => bukaBerkas("bukti-bayar", b.kunci)} className="mt-3 block w-full text-center text-xs font-bold text-sky hover:underline">Buka berkas bukti asli: {b.nama}</button>}
     </div>
   );
 }

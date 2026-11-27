@@ -26,8 +26,18 @@ export default function LoginForm({ next, baruDaftar }) {
     setGalat("");
     if (Object.keys(f).length) return;
     setProses(true);
-    setTimeout(() => {
-      const sesi = masuk(email, sandi);
+    (async () => {
+      const sesi = await masuk(email, sandi);
+      if (sesi?.galat) {
+        setProses(false);
+        setGalat(sesi.galat);
+        return;
+      }
+      if (sesi?.belumKonfirmasi) {
+        setProses(false);
+        setGalat("Email Anda belum dikonfirmasi. Periksa kotak masuk email Anda atau hubungi admin.");
+        return;
+      }
       if (sesi?.nonaktif) {
         setProses(false);
         setGalat("Akun Anda dinonaktifkan. Hubungi admin FMIPA UNNES untuk mengaktifkannya kembali.");
@@ -40,7 +50,7 @@ export default function LoginForm({ next, baruDaftar }) {
       }
       const aman = next && next.startsWith("/") && !next.startsWith("//") ? next : `/dashboard/${sesi.peran}`;
       router.push(aman);
-    }, 550);
+    })();
   }
 
   const input = (bad) => `w-full rounded-xl border bg-field py-3.5 pl-11 pr-4 text-sm outline-none transition placeholder:text-slate-400 focus:bg-white ${bad ? "border-red-300 focus:border-red-400" : "border-pale focus:border-sky"}`;

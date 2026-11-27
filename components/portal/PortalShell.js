@@ -7,7 +7,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { LogOut, Menu, X, LoaderCircle, UserRound } from "lucide-react";
 import { Brand, LogoBadge } from "@/components/Brand";
 import { keluar } from "@/lib/auth";
-import { useKlienSiap, useSesi } from "@/lib/useClient";
+import { useKlienSiap, useSesi, useSesiSiap } from "@/lib/useClient";
 import { useOtomatisBatal, useSemuaTransaksi } from "@/lib/transaksi";
 import { MENUS } from "./menus";
 
@@ -67,6 +67,7 @@ export default function PortalShell({ peran, children }) {
   const pathname = usePathname();
   const siap = useKlienSiap();
   const sesi = useSesi();
+  const sesiSiap = useSesiSiap();
   const [drawer, setDrawer] = useState(false);
   const cfg = MENUS[peran];
   useOtomatisBatal();
@@ -77,16 +78,16 @@ export default function PortalShell({ peran, children }) {
   );
 
   useEffect(() => {
-    if (!siap) return;
+    if (!siap || !sesiSiap) return;
     if (!sesi) {
       let sengaja = false;
       try { sengaja = sessionStorage.getItem("sipasti_keluar") === "1"; sessionStorage.removeItem("sipasti_keluar"); } catch {}
       router.replace(sengaja ? "/masuk" : `/masuk?next=${encodeURIComponent(pathname)}`);
     }
     else if (sesi.peran !== peran) router.replace(`/dashboard/${sesi.peran}`);
-  }, [siap, sesi, pathname, router, peran]);
+  }, [siap, sesiSiap, sesi, pathname, router, peran]);
 
-  if (!siap || !sesi || sesi.peran !== peran) {
+  if (!siap || !sesiSiap || !sesi || sesi.peran !== peran) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-soft text-navy">
         <div className="flex items-center gap-3 text-sm font-semibold"><LoaderCircle className="animate-spin text-sky" /> Memuat {cfg.judul.toLowerCase()}…</div>

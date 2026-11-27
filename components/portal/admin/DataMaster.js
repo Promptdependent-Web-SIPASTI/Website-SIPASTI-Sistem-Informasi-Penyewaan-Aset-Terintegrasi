@@ -5,11 +5,10 @@ import { Building2, Wrench, Plus, CircleCheck, CircleAlert, UserPlus, Save, Rota
 import { Kartu, JudulHalaman } from "../ui";
 import { useAsetList, useSubkategori, tambahSubkategori, ubahAset } from "@/lib/asetStore";
 import { useSemuaTransaksi, TIPE_LABEL } from "@/lib/transaksi";
-import { akunTerdaftar, daftarAkun, daftarNonaktif, emailValid, setAktif } from "@/lib/auth";
+import { useProfilList, daftarAkun, emailValid, setAktif } from "@/lib/auth";
 import { usePengaturan, simpanPengaturan, PENGATURAN_AWAL, PARAMETER_TETAP } from "@/lib/pengaturan";
 import { useSesi } from "@/lib/useClient";
 import { KATEGORI, rupiah, satuanLabel } from "@/lib/data";
-import { useSyncExternalStore } from "react";
 
 /* ---------------- Kategori ---------------- */
 export function Kategori() {
@@ -25,7 +24,7 @@ export function Kategori() {
     const n = nama.trim();
     if (n.length < 3) return setG("Nama subkategori minimal 3 karakter.");
     if (sub.some((s) => s.toLowerCase() === n.toLowerCase())) return setG("Subkategori sudah ada.");
-    tambahSubkategori(n); setNama(""); setG("");
+    tambahSubkategori(n).then(() => { setNama(""); setG(""); }).catch((err) => setG(err.message));
   }
   return (
     <div className="space-y-6">
@@ -59,7 +58,7 @@ function BarisTarif({ a }) {
   const [satuan, setSatuan] = useState(a.satuan);
   const [ok, setOk] = useState(false);
   const berubah = Number(tarif) !== a.tarif || satuan !== a.satuan;
-  const simpan = () => { if (tarif === "" || Number(tarif) < 0) return; ubahAset(a.slug, { tarif: Number(tarif), satuan }); setOk(true); setTimeout(() => setOk(false), 1800); };
+  const simpan = () => { if (tarif === "" || Number(tarif) < 0) return; ubahAset(a.slug, { tarif: Number(tarif), satuan }).then(() => { setOk(true); setTimeout(() => setOk(false), 1800); }).catch((err) => window.alert(err.message)); };
   return (
     <tr>
       <td className="px-3 py-3 text-xs font-bold text-slate-500">{a.kode}</td>
@@ -90,28 +89,21 @@ export function Tarif() {
 }
 
 /* ---------------- Pengguna ---------------- */
-const subs = (cb) => { window.addEventListener("sipasti-data", cb); window.addEventListener("storage", cb); return () => { window.removeEventListener("sipasti-data", cb); window.removeEventListener("storage", cb); }; };
-const snap = () => { try { return `${localStorage.getItem("sipasti_demo_accounts") ?? ""}|${localStorage.getItem("sipasti_demo_nonaktif") ?? ""}`; } catch { return ""; } };
 
 export function Pengguna() {
   const sesi = useSesi();
   const { items } = useSemuaTransaksi();
-  const kunci = useSyncExternalStore(subs, snap, () => "");
+  const profil = useProfilList();
   const [f, setF] = useState({ nama: "", email: "", sandi: "" });
   const [g, setG] = useState({});
   const [ok, setOk] = useState("");
 
   const daftar = useMemo(() => {
-    void kunci;
-    const peta = new Map();
-    akunTerdaftar().forEach((a) => peta.set(a.email, { nama: a.nama, email: a.email, peran: a.peran, tipe: a.tipe }));
-    items.forEach((t) => { if (!peta.has(t.email)) peta.set(t.email, { nama: t.penyewa?.nama ?? t.email, email: t.email, peran: "penyewa", tipe: t.penyewa?.tipe }); });
-    const nonaktif = new Set(daftarNonaktif());
     const urut = { admin: 0, petugas: 1, penyewa: 2 };
-    return [...peta.values()].map((u) => ({ ...u, aktif: !nonaktif.has(u.email), trx: items.filter((t) => t.email === u.email).length })).sort((a, b) => urut[a.peran] - urut[b.peran] || a.nama.localeCompare(b.nama));
-  }, [kunci, items]);
+    return profil.map((u) => ({ ...u, trx: items.filter((t) => t.email === u.email).length })).sort((a, b) => urut[a.peran] - urut[b.peran] || a.nama.localeCompare(b.nama));
+  }, [profil, items]);
 
-  function tambah(e) {
+  async function tambah(e) {
     e.preventDefault();
     const x = {};
     if (f.nama.trim().length < 3) x.nama = "Nama wajib diisi.";
@@ -119,7 +111,7 @@ export function Pengguna() {
     if (f.sandi.length < 8) x.sandi = "Kata sandi minimal 8 karakter.";
     setG(x); setOk("");
     if (Object.keys(x).length) return;
-    const r = daftarAkun({ nama: f.nama.trim(), email: f.email.trim(), sandi: f.sandi }, "petugas");
+    const r = await daftarAkun({ nama: f.nama.trim(), email: f.email.trim(), sandi: f.sandi }, "petugas");
     if (!r.ok) return setG({ email: r.pesan });
     setF({ nama: "", email: "", sandi: "" }); setOk(`Akun petugas ${f.nama.trim()} dibuat.`);
   }
@@ -146,13 +138,13 @@ export function Pengguna() {
             <thead><tr className="bg-pale/70 text-xs font-bold uppercase tracking-wide text-navy"><th className="rounded-l-lg px-3 py-3">Nama</th><th className="px-3 py-3">Email</th><th className="px-3 py-3">Peran</th><th className="px-3 py-3">Transaksi</th><th className="px-3 py-3">Status</th><th className="rounded-r-lg px-3 py-3"><span className="sr-only">Aksi</span></th></tr></thead>
             <tbody className="divide-y divide-pale/80">
               {daftar.map((u) => (
-                <tr key={u.email}>
+                <tr key={u.id}>
                   <td className="px-3 py-3.5 font-bold text-navy">{u.nama}</td>
                   <td className="px-3 py-3.5 text-xs text-ink">{u.email}</td>
                   <td className="px-3 py-3.5"><span className={`rounded-full px-3 py-1 text-xs font-bold capitalize ${chip[u.peran]}`}>{u.peran === "penyewa" ? TIPE_LABEL[u.tipe] ?? "Penyewa" : u.peran}</span></td>
                   <td className="px-3 py-3.5 text-ink">{u.trx}</td>
                   <td className="px-3 py-3.5"><span className={`text-xs font-bold ${u.aktif ? "text-emerald-700" : "text-red-600"}`}>{u.aktif ? "Aktif" : "Nonaktif"}</span></td>
-                  <td className="px-3 py-3.5 text-right">{u.email === sesi?.email ? <span className="inline-flex items-center gap-1 text-xs text-slate-400"><Lock size={12} /> Akun Anda</span> : <button type="button" onClick={() => setAktif(u.email, !u.aktif)} className={`rounded-lg border px-3 py-1.5 text-xs font-bold transition ${u.aktif ? "border-red-300 text-red-600 hover:bg-red-50" : "border-sky text-sky hover:bg-sky hover:text-white"}`}>{u.aktif ? "Nonaktifkan" : "Aktifkan"}</button>}</td>
+                  <td className="px-3 py-3.5 text-right">{u.email === sesi?.email ? <span className="inline-flex items-center gap-1 text-xs text-slate-400"><Lock size={12} /> Akun Anda</span> : <button type="button" onClick={() => setAktif(u.id, !u.aktif).catch((err) => window.alert(err.message))} className={`rounded-lg border px-3 py-1.5 text-xs font-bold transition ${u.aktif ? "border-red-300 text-red-600 hover:bg-red-50" : "border-sky text-sky hover:bg-sky hover:text-white"}`}>{u.aktif ? "Nonaktifkan" : "Aktifkan"}</button>}</td>
                 </tr>
               ))}
             </tbody>
@@ -181,7 +173,7 @@ export function Pengaturan() {
     if (!(b >= 1 && b <= 72)) x.batasBayarJam = "Batas waktu bayar harus 1–72 jam.";
     setG(x);
     if (Object.keys(x).length) return;
-    simpanPengaturan({ dendaPersen: d, toleransiMenit: t, batasBayarJam: b });
+    simpanPengaturan({ dendaPersen: d, toleransiMenit: t, batasBayarJam: b }).catch((err) => window.alert(err.message));
     setF(null); setOk(true);
   }
   const inp = (bad) => `mt-1.5 w-full rounded-xl border bg-pale/60 px-4 py-2.5 text-sm font-bold text-navy outline-none focus:bg-white ${bad ? "border-red-300" : "border-transparent focus:border-sky"}`;

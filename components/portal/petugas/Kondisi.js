@@ -14,13 +14,17 @@ function FormKondisi({ a, tutup }) {
   const [k, setK] = useState(/rusak berat/i.test(a.kondisi) ? "Rusak Berat" : /pemeliharaan/i.test(a.kondisi) ? "Dalam Pemeliharaan" : /rusak/i.test(a.kondisi) ? "Rusak Ringan" : "Baik");
   const [n, setN] = useState(String(isP ? Math.max(1, a.stokTotal - a.stok) : 1));
   const [g, setG] = useState("");
-  function simpan(e) {
+  async function simpan(e) {
     e.preventDefault();
     if (isP && k !== "Baik" && k !== "Dalam Pemeliharaan" && !(Number(n) >= 1 && Number(n) <= a.stokTotal)) return setG(`Jumlah unit harus 1–${a.stokTotal}.`);
-    if (k === "Baik") ubahAset(a.slug, { kondisi: "Baik", status: "Tersedia", statusKet: undefined, ...(isP ? { stok: a.stokTotal } : {}) });
-    else if (isP && k !== "Dalam Pemeliharaan") { const r = Number(n); ubahAset(a.slug, { stok: a.stokTotal - r, kondisi: `${r} unit ${k === "Rusak Berat" ? "rusak berat" : "rusak ringan"}, ${a.stokTotal - r} baik`, status: a.stokTotal - r > 0 ? "Tersedia" : "Tidak tersedia", statusKet: a.stokTotal - r > 0 ? undefined : "rusak" }); }
-    else if (k === "Rusak Ringan") ubahAset(a.slug, { kondisi: "Rusak Ringan" });
-    else ubahAset(a.slug, { kondisi: k === "Rusak Berat" ? "Rusak Berat" : "Dalam Pemeliharaan", status: "Tidak tersedia", statusKet: k === "Rusak Berat" ? "rusak berat" : "perawatan", ...(isP ? { stok: 0 } : {}) });
+    try {
+    if (k === "Baik") await ubahAset(a.slug, { kondisi: "Baik", status: "Tersedia", statusKet: undefined, ...(isP ? { stok: a.stokTotal } : {}) });
+    else if (isP && k !== "Dalam Pemeliharaan") { const r = Number(n); await ubahAset(a.slug, { stok: a.stokTotal - r, kondisi: `${r} unit ${k === "Rusak Berat" ? "rusak berat" : "rusak ringan"}, ${a.stokTotal - r} baik`, status: a.stokTotal - r > 0 ? "Tersedia" : "Tidak tersedia", statusKet: a.stokTotal - r > 0 ? undefined : "rusak" }); }
+    else if (k === "Rusak Ringan") await ubahAset(a.slug, { kondisi: "Rusak Ringan" });
+    else await ubahAset(a.slug, { kondisi: k === "Rusak Berat" ? "Rusak Berat" : "Dalam Pemeliharaan", status: "Tidak tersedia", statusKet: k === "Rusak Berat" ? "rusak berat" : "perawatan", ...(isP ? { stok: 0 } : {}) });
+    } catch (err) {
+      return setG(err.message);
+    }
     tutup();
   }
   return (
